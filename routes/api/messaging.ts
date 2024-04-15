@@ -15,8 +15,9 @@ export const handler: Handlers =  {
   async POST(_req: Request, _ctx: FreshContext): Promise<Response> {
     const body = await _req.json(); 
     const event: MessageEvent = body.events[0];
+    console.log(event);
     const chatCompletion = await ai.chat.completions.create({
-      messages: [{ role: "user", content: "tell me a joke about dinosaurs" }],
+      messages: [{ role: "user", content: `あなたは何でも知ってる物知り博士です。次の"#動物の名称"欄に記載される動物の生態を詳しく教えてください。ただし、"#動物の名称"欄に動物の名称ではないものが記載された場合は、"それは動物の名称ではありません"と回答してください。\n\n#動物の名称: ${event.message.id}` }],
       model: "gpt-4-1106-preview",
     });
     const completion = chatCompletion.choices[0].message.content;
