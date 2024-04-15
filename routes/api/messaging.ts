@@ -1,6 +1,6 @@
 import type { Handlers, FreshContext } from "$fresh/server.ts";
 import { messagingApi, MessageEvent } from "npm:@line/bot-sdk@8.4.0";
-import type { ClientConfig } from "npm:@line/bot-sdk@8.4.0";
+import type { ClientConfig, TextEventMessage } from "npm:@line/bot-sdk@8.4.0";
 import OpenAI from "https://deno.land/x/openai@v4.33.1/mod.ts";
 
 const config: ClientConfig = {
@@ -15,9 +15,9 @@ export const handler: Handlers =  {
   async POST(_req: Request, _ctx: FreshContext): Promise<Response> {
     const body = await _req.json(); 
     const event: MessageEvent = body.events[0];
-    console.log(event);
+    const textMessage = event.message as TextEventMessage;
     const chatCompletion = await ai.chat.completions.create({
-      messages: [{ role: "user", content: `あなたは何でも知ってる物知り博士です。次の"#動物の名称"欄に記載される動物の生態を詳しく教えてください。ただし、"#動物の名称"欄に動物の名称ではないものが記載された場合は、"それは動物の名称ではありません"と回答してください。\n\n#動物の名称: ${event.message.id}` }],
+      messages: [{ role: "user", content: `あなたは何でも知ってる物知り博士です。次の"#動物の名称"欄に記載される動物の生態を詳しく教えてください。ただし、"#動物の名称"欄に動物の名称ではないものが記載された場合は、"それは動物の名称ではありません"と回答してください。\n\n#動物の名称: ${textMessage.text}` }],
       model: "gpt-4-1106-preview",
     });
     const completion = chatCompletion.choices[0].message.content;
