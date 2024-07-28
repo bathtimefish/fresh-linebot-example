@@ -42,6 +42,7 @@ declare type conversationIds = { userId: string, conversationId: string }[];
 let conversationIds: conversationIds = [];
 // deno-lint-ignore no-inferrable-types
 let invervalId: number = 0;
+const conversationCanselMin = 1;
 
 const getConversationId = (event: MessageEvent): string|null => {
   const userId = event.source.userId;
@@ -57,24 +58,27 @@ const getConversationId = (event: MessageEvent): string|null => {
 
 const setConversationId = (event: MessageEvent, conversationId: string): void => {
   const userId = event.source.userId;
+  let updated = false;
   if (!userId) return;
-  conversationIds.push({ userId, conversationId });
   if (invervalId) clearInterval(invervalId);
   for (let i = 0; i < conversationIds.length; i++) {
     if (conversationIds[i].userId === userId) {
-      conversationIds.splice(i, 1);
+      conversationIds[i] = conversationId;
+      updated = true;
       break;
     }
   }
+  if (!updated) {
+    conversationIds.push({ userId, conversationId });
+  }
   invervalId = setTimeout(() => {
     conversationIds = [];
-  }, 1000 * 60 * 10);
-  console.log(conversationIds);
+  }, 1000 * 60 * conversationCanselMin);
 };
 
 const config: ClientConfig = {
-    channelAccessToken: "Fdp7a1SvzScSrHrpzYsnjwNyE/MOrRMbt7r2GAvzsfJ9heOZp0mjdhceEDdjr2wHkYFP0lD4kIQ5dEgaq820cjoTI6vZZYOBTJq07YNVkH4yCsjCnuX6EnuZAVtZktxN/NWX4JVI30gvNgCsJbGnUQdB04t89/1O/w1cDnyilFU=",
-    channelSecret: "7efc5952c8594974f4fcda475b49bfa5",
+    channelAccessToken: "YOUR_CHANNEL_ACCESS_TOKEN",
+    channelSecret: "YOUR_CHANNEL_SECRET",
 };
 const client = new messagingApi.MessagingApiClient(config);
 
@@ -98,7 +102,7 @@ export const handler: Handlers =  {
     const resp = await fetch("https://api.dify.ai/v1/chat-messages", {
       method: "POST",
       headers: {
-        "Authorization": "Bearer app-DEAvRK6ASFLPbZmQ2ktDsSwh",
+	"Authorization": "Bearer ENTER-YOUR-SECRET-KEY",
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestData),
