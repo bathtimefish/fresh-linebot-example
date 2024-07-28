@@ -63,7 +63,7 @@ const setConversationId = (event: MessageEvent, conversationId: string): void =>
   if (invervalId) clearInterval(invervalId);
   for (let i = 0; i < conversationIds.length; i++) {
     if (conversationIds[i].userId === userId) {
-      conversationIds[i] = conversationId;
+      conversationIds[i].conversationId = conversationId;
       updated = true;
       break;
     }
