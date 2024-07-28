@@ -29,6 +29,48 @@ declare interface DifyChatMessageResponse {
   created_at: number; 
 }
 
+declare interface DifyChatMessageRequest {
+  // deno-lint-ignore ban-types
+  inputs: {};
+  query: string;
+  response_mode: "blocking";
+  user: string;
+  conversation_id?: string;
+}
+
+declare type conversationIds = { userId: string, conversationId: string }[];
+const conversationIds: conversationIds = [];
+// deno-lint-ignore no-inferrable-types
+let invervalId: number = 0;
+
+const getConversationId = (event: MessageEvent): string|null => {
+  const userId = event.source.userId;
+  if (!userId) return null;
+  if (conversationIds.length === 0) return null;
+  for (const conversationId of conversationIds) {
+    if (conversationId.userId === userId) {
+      return conversationId.conversationId;
+    }
+  }
+  return null;
+}
+
+const setConversationId = (event: MessageEvent, conversationId: string): void => {
+  const userId = event.source.userId;
+  if (!userId) return;
+  conversationIds.push({ userId, conversationId });
+  if (invervalId) clearInterval(invervalId);
+  invervalId = setInterval(() => {
+    for (let i = 0; i < conversationIds.length; i++) {
+      if (conversationIds[i].userId === userId) {
+        conversationIds.splice(i, 1);
+        break;
+      }
+    }
+  }, 1000 * 60 * 10);
+  console.log(conversationIds);
+};
+
 const config: ClientConfig = {
     channelAccessToken: "Fdp7a1SvzScSrHrpzYsnjwNyE/MOrRMbt7r2GAvzsfJ9heOZp0mjdhceEDdjr2wHkYFP0lD4kIQ5dEgaq820cjoTI6vZZYOBTJq07YNVkH4yCsjCnuX6EnuZAVtZktxN/NWX4JVI30gvNgCsJbGnUQdB04t89/1O/w1cDnyilFU=",
     channelSecret: "7efc5952c8594974f4fcda475b49bfa5",
@@ -42,12 +84,16 @@ export const handler: Handlers =  {
     const textMessage = event.message as TextEventMessage;
     console.log(textMessage.text);
     // request to Dify API
-    const requestData = {
+    const requestData: DifyChatMessageRequest = {
       inputs: {},
       query: textMessage.text,
       response_mode: "blocking",
       user: "line-bot",
     };
+    // get conversation id
+    const conversationId = getConversationId(event);
+    console.log(conversationId);
+    if (conversationId) requestData["conversation_id"] = conversationId;
     const resp = await fetch("https://api.dify.ai/v1/chat-messages", {
       method: "POST",
       headers: {
@@ -66,6 +112,9 @@ export const handler: Handlers =  {
         },
       ],
     });
+    // set conversation id
+    setConversationId(event, res.conversation_id);
     return new Response(null, { status: 204 });
   }
 };
+
