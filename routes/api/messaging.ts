@@ -39,7 +39,7 @@ declare interface DifyChatMessageRequest {
 }
 
 declare type conversationIds = { userId: string, conversationId: string }[];
-const conversationIds: conversationIds = [];
+let conversationIds: conversationIds = [];
 // deno-lint-ignore no-inferrable-types
 let invervalId: number = 0;
 
@@ -60,13 +60,14 @@ const setConversationId = (event: MessageEvent, conversationId: string): void =>
   if (!userId) return;
   conversationIds.push({ userId, conversationId });
   if (invervalId) clearInterval(invervalId);
-  invervalId = setInterval(() => {
-    for (let i = 0; i < conversationIds.length; i++) {
-      if (conversationIds[i].userId === userId) {
-        conversationIds.splice(i, 1);
-        break;
-      }
+  for (let i = 0; i < conversationIds.length; i++) {
+    if (conversationIds[i].userId === userId) {
+      conversationIds.splice(i, 1);
+      break;
     }
+  }
+  invervalId = setTimeout(() => {
+    conversationIds = [];
   }, 1000 * 60 * 10);
   console.log(conversationIds);
 };
