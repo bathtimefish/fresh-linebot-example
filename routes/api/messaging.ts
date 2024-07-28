@@ -1,7 +1,33 @@
 import type { Handlers, FreshContext } from "$fresh/server.ts";
-import { messagingApi, MessageEvent } from "npm:@line/bot-sdk@8.4.0";
-import type { ClientConfig, TextEventMessage } from "npm:@line/bot-sdk@8.4.0";
-import OpenAI from "https://deno.land/x/openai@v4.33.1/mod.ts";
+import { messagingApi, MessageEvent } from "npm:@line/bot-sdk@9.2.2";
+import type { ClientConfig, TextEventMessage } from "npm:@line/bot-sdk@9.2.2";
+
+declare interface DifyChatMessageResponse {
+  event: string;
+  task_id: string;
+  id: string;
+  message_id: string;
+  conversation_id: string;
+  mode: string;
+  answer: string;
+  metadata: {
+    usage: {
+      prompt_tokens: number;
+      prompt_unit_price: string;
+      prompt_price_unit: string;
+      prompt_price: string;
+      completion_tokens: number;
+      completion_unit_price: string;
+      completion_price_unit: string;
+      completion_price: string;
+      total_tokens: number;
+      total_price: string;
+      currency: string;
+      latency: number;
+    }
+  },
+  created_at: number; 
+}
 
 const config: ClientConfig = {
     channelAccessToken: "Fdp7a1SvzScSrHrpzYsnjwNyE/MOrRMbt7r2GAvzsfJ9heOZp0mjdhceEDdjr2wHkYFP0lD4kIQ5dEgaq820cjoTI6vZZYOBTJq07YNVkH4yCsjCnuX6EnuZAVtZktxN/NWX4JVI30gvNgCsJbGnUQdB04t89/1O/w1cDnyilFU=",
@@ -9,24 +35,34 @@ const config: ClientConfig = {
 };
 const client = new messagingApi.MessagingApiClient(config);
 
-const ai = new OpenAI();
-
 export const handler: Handlers =  {
   async POST(_req: Request, _ctx: FreshContext): Promise<Response> {
     const body = await _req.json(); 
     const event: MessageEvent = body.events[0];
     const textMessage = event.message as TextEventMessage;
-    const chatCompletion = await ai.chat.completions.create({
-      messages: [{ role: "user", content: `あなたは何でも知ってる物知り博士です。次の"#動物の名称"欄に記載される動物の生態を詳しく教えてください。ただし、"#動物の名称"欄に動物の名称ではないものが記載された場合は、"それは動物の名称ではありません"と回答してください。\n\n#動物の名称: ${textMessage.text}` }],
-      model: "gpt-4-1106-preview",
+    console.log(textMessage.text);
+    // request to Dify API
+    const requestData = {
+      inputs: {},
+      query: textMessage.text,
+      response_mode: "blocking",
+      user: "line-bot",
+    };
+    const resp = await fetch("https://api.dify.ai/v1/chat-messages", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer app-DEAvRK6ASFLPbZmQ2ktDsSwh",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
     });
-    const completion = chatCompletion.choices[0].message.content;
+    const res = await resp.json() as DifyChatMessageResponse;
     await client.replyMessage({
       replyToken: event.replyToken,
       messages: [
         {
           type: "text",
-          text: completion,
+          text: res.answer,
         },
       ],
     });
